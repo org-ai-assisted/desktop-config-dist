@@ -9,10 +9,6 @@
 # autostart entries that start user services fire.
 /usr/libexec/desktop-config-dist/import-wayland-session-env
 
-# Start a polkit authentication agent so pkexec GUI prompts (e.g. the partition
-# editor gparted, which uses `pkexec --disable-internal-agent`) can appear.
-/usr/libexec/desktop-config-dist/start-polkit-agent &
-
 # Configure output directives such as mode, position, scale and transform.
 # Use wlr-randr to get your output names
 # Example ~/.config/kanshi/config below:
