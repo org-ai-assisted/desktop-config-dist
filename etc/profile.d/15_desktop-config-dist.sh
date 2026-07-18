@@ -15,13 +15,19 @@ else
     export WLR_RENDERER='pixman'
   fi
 
-  ## Make gtk3 use Wayland by default, apps may use X11 even if they support
-  ## Wayland if this is not set
-  export GDK_BACKEND=wayland
+  ## Prefer Wayland but keep X11 (XWayland) as a fallback. The backends are
+  ## tried left to right, so apps that support Wayland still use it, while apps
+  ## that do not support Wayland -- or that need XWayland, such as some root GUI
+  ## apps launched from the menu (partition editor, firewall settings, status
+  ## checker) -- fall back to X11 instead of failing to open any window at all.
+  ## Without a fallback (a bare 'wayland') those apps abort with no window.
 
-  ## Make Qt use Wayland by default, apps may use X11 even if they support
-  ## Wayland if this is not set
-  export QT_QPA_PLATFORM=wayland
+  ## gtk3: comma-separated backend list.
+  export GDK_BACKEND=wayland,x11
+
+  ## Qt: semicolon-separated platform list. Quote the ';' so the shell does not
+  ## treat it as a command separator.
+  export QT_QPA_PLATFORM='wayland;xcb'
 fi
 
 if [ -z "$XDG_CONFIG_DIRS" ]; then
