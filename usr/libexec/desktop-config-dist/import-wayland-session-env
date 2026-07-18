@@ -1,0 +1,37 @@
+#!/bin/bash
+
+## Copyright (C) 2026 - 2026 ENCRYPTED SUPPORT LLC <adrelanos@whonix.org>
+## See the file COPYING for copying conditions.
+
+## AI-Assisted
+
+## Import the graphical-session environment into the systemd --user manager and
+## the D-Bus activation environment. Run once from the Wayland session
+## autostart.
+##
+## systemd --user and D-Bus-activated user services (such as livecheck.service)
+## do not inherit WAYLAND_DISPLAY automatically: only some compositors inject
+## it (GNOME, KDE, labwc-DRM do; sway and other minimal wlroots sessions do
+## not). Importing is safe because the Wayland socket name lives under the
+## owner-only (0700) XDG_RUNTIME_DIR. A unit must NOT hardcode
+## Environment=WAYLAND_DISPLAY=wayland-0 because the socket name is not portable.
+
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o errtrace
+shopt -s inherit_errexit
+shopt -s shift_verbose
+
+session_env_var_list=(
+  WAYLAND_DISPLAY
+  DISPLAY
+  XAUTHORITY
+  XDG_CURRENT_DESKTOP
+)
+
+## import-environment skips names that are unset in the caller environment, so
+## an absent value never clobbers a previously imported one. Both sinks get the
+## same list. Best-effort: a failure here must not abort session startup.
+systemctl --user import-environment "${session_env_var_list[@]}" || true
+dbus-update-activation-environment --systemd "${session_env_var_list[@]}" >/dev/null 2>&1 || true

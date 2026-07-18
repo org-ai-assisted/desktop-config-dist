@@ -4,6 +4,17 @@
 [Unit]
 Description=Live status monitor (user service)
 ConditionPathExists=!/usr/share/qubes/marker-vm
+## The GUI needs a display. It reaches the systemd --user manager environment
+## only if the session imports it (see the labwc autostart
+## import-wayland-session-env hook); skip cleanly rather than start a blind GUI
+## when none is present. Accept either Wayland or X11: the '|' prefix makes
+## these triggering (logical OR) conditions, so the unit starts when
+## WAYLAND_DISPLAY or DISPLAY is set. Requires systemd >= 246 for
+## ConditionEnvironment.
+After=graphical-session.target
+PartOf=graphical-session.target
+ConditionEnvironment=|WAYLAND_DISPLAY
+ConditionEnvironment=|DISPLAY
 
 [Service]
 Type=exec

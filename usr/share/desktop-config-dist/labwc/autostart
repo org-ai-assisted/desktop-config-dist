@@ -2,8 +2,16 @@
 # Applications started here won't be closed by `lxqt-leave --logout` and settings can be lost
 # Preferred place for starting wayland-only applications
 
-# Faster startup for GTK apps:
-dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY > /dev/null 2>&1 &
+# Import the graphical-session environment (WAYLAND_DISPLAY etc.) into the
+# systemd --user manager and the D-Bus activation environment, so user services
+# such as livecheck.service and D-Bus/GTK apps can reach the compositor. Run
+# synchronously (not backgrounded) so the environment is in place before later
+# autostart entries that start user services fire.
+/usr/libexec/desktop-config-dist/import-wayland-session-env
+
+# Start a polkit authentication agent so pkexec GUI prompts (e.g. the partition
+# editor gparted, which uses `pkexec --disable-internal-agent`) can appear.
+/usr/libexec/desktop-config-dist/start-polkit-agent &
 
 # Configure output directives such as mode, position, scale and transform.
 # Use wlr-randr to get your output names

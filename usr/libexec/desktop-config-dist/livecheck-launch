@@ -1,0 +1,27 @@
+#!/bin/bash
+
+## Copyright (C) 2026 - 2026 ENCRYPTED SUPPORT LLC <adrelanos@whonix.org>
+## See the file COPYING for copying conditions.
+
+## AI-Assisted
+
+## Import the graphical-session environment, then start livecheck.service.
+## Used by both the livecheck autostart and the menu launcher.
+##
+## livecheck.service is a systemd --user GUI service and inherits the manager
+## environment, not the launcher's. The display variables must therefore be
+## imported into the manager from this session-context caller before the
+## service starts. Doing it here -- rather than relying only on a separate
+## session-start hook -- avoids a race where the service is condition-skipped
+## because the import had not happened yet, and works in sessions that run no
+## such hook. A clean condition-skip is not an error, so errexit stays quiet.
+
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o errtrace
+shopt -s inherit_errexit
+shopt -s shift_verbose
+
+/usr/libexec/desktop-config-dist/import-wayland-session-env
+systemctl --user start livecheck.service
