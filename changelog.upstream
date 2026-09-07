@@ -1,3 +1,61 @@
+commit c11c1527b1618f4eea0f4b4a0bd46d4c3d992e4c
+Merge: f77db2f f4625d3
+Author: Patrick Schleizer <adrelanos@whonix.org>
+Date:   Sun Sep 6 09:29:41 2026 -0400
+
+    Merge remote-tracking branch 'refs/remotes/ArrayBolt3/arraybolt3/trixie'
+
+commit f4625d38fd762c222a840482de6e681c9828036f
+Merge: 7b6b5f3 f77db2f
+Author: Aaron Rainbolt <arraybolt3@gmail.com>
+Date:   Sun Sep 6 01:06:04 2026 -0400
+
+    Merge branch 'master' into arraybolt3/trixie
+
+commit 7b6b5f39b97ce6defa5ae0e7e5076c18480a9db3
+Author: Aaron Rainbolt <arraybolt3@gmail.com>
+Date:   Fri Sep 4 17:51:56 2026 -0400
+
+    Remove QTerminal drop-down keybinding
+
+commit ca2112716010fad0b66194818bad86bb6524b0d0
+Author: Aaron Rainbolt <arraybolt3@gmail.com>
+Date:   Fri Sep 4 17:51:01 2026 -0400
+
+    Polish
+
+commit 2d667d967fe8be3f2941611de3fb56f9297b3ebd
+Merge: 54b08d3 c18fb16
+Author: Aaron Rainbolt <arraybolt3@gmail.com>
+Date:   Fri Sep 4 17:30:55 2026 -0400
+
+    Merge branch 'ai' into arraybolt3/trixie
+
+commit f77db2f56c26a8ba25f9f7abbbf815ec6b4d64a6
+Author: Patrick Schleizer <adrelanos@whonix.org>
+Date:   Wed Aug 26 07:55:23 2026 +0000
+
+    bumped changelog version
+
+commit 437ee013dec1d6c632772af6995e834953d08860
+Merge: 89b6e29 c18fb16
+Author: Patrick Schleizer <adrelanos@whonix.org>
+Date:   Tue Aug 25 01:30:24 2026 -0400
+
+    Merge remote-tracking branch 'refs/remotes/org-ai-assisted/ai'
+
+commit c18fb16792e3b91c1970235f3551b37c39802c0a
+Author: assisted-by-ai (Bot Account) (Machine Account) <228987186+assisted-by-ai@users.noreply.github.com>
+Date:   Mon Aug 24 23:29:28 2026 -0400
+
+    ci: drop orphaned consumer-secrets-audit.yml (reusable decommissioned)
+
+commit 89b6e29b80e19df63c7832ec55c26f53c6639634
+Author: Patrick Schleizer <adrelanos@whonix.org>
+Date:   Sun Aug 23 05:47:13 2026 +0000
+
+    bumped changelog version
+
 commit e4d187fa3b0f8ad3d4ee903b7b61ef732a009b1e
 Merge: 5b80dd2 8773fd9
 Author: Patrick Schleizer <adrelanos@whonix.org>
