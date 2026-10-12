@@ -268,8 +268,8 @@ found.</li>
   <li><b>All changes will be lost on reboot.</b></li>
   <li>Provision a second disk in a live session with \
 <code>sudo persistence-setup</code>, then reboot into the <b>Persistent</b> \
-submenu. For a LUKS-encrypted disk, append the <code>rd.luks.uuid=</code> line \
-that persistence-setup printed to the entry (GRUB 'e') so it unlocks.</li>
+submenu. For a LUKS-encrypted disk, enter the passphrase when prompted in early \
+boot.</li>
   <li>For more information, see the following link:</li>
 </ul>
 <a href="{kicksecure_wiki_homepage}/wiki/Live_Mode">\
