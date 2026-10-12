@@ -1,4 +1,4 @@
-#!/usr/bin/python3 -su
+#!/usr/bin/python3 -Bsu
 
 # Copyright (C) 2025 - 2025 ENCRYPTED SUPPORT LLC <adrelanos@whonix.org>
 # See the file COPYING for copying conditions.
@@ -253,6 +253,38 @@ read_only_mode_text_cli: str = f"""{text_header_cli}
 * No changes will be made to disk.
 * All storage media available to the OS is set to read-only by hardware
   or drivers.
+* For more information, see the following link:
+
+{kicksecure_wiki_homepage}/wiki/Live_Mode"""
+
+persistence_amnesic_text_gui: str = f"""{text_header_gui}<br/>
+<br/>
+<b>Live Mode Active:</b> <b>Yes</b> (persistent boot, but \
+<font color="red">running amnesic</font>)<br/>
+<b>Persistent Mode Active:</b> <font color="red">No</font>
+<ul>
+  <li>You booted a <b>Persistent</b> entry, but no persistence volume was \
+found.</li>
+  <li><b>All changes will be lost on reboot.</b></li>
+  <li>Provision a second disk in a live session with \
+<code>sudo persistence-setup</code>, then reboot into the <b>Persistent</b> \
+submenu. If the disk is LUKS-encrypted, enter its passphrase when prompted in \
+early boot.</li>
+  <li>For more information, see the following link:</li>
+</ul>
+<a href="{kicksecure_wiki_homepage}/wiki/Live_Mode">\
+{kicksecure_wiki_homepage}/wiki/Live_Mode</a>"""
+
+persistence_amnesic_text_cli: str = f"""{text_header_cli}
+
+{colors.bold}Live Mode Active: Yes{colors.reset} (persistent boot, running \
+amnesic)
+{colors.bold}Persistent Mode Active: No{colors.reset}
+
+* You booted a 'Persistent' entry, but no persistence volume was found.
+* All changes will be lost on reboot.
+* Provision a second disk in a live session with 'sudo persistence-setup',
+  then reboot into the 'Persistent' submenu.
 * For more information, see the following link:
 
 {kicksecure_wiki_homepage}/wiki/Live_Mode"""
@@ -512,6 +544,10 @@ information."""
 
 error_live_state_tooltip: str = """ERROR: The system's live state cannot be \
 determined. Click on the icon for more information."""
+
+persistence_amnesic_tooltip: str = """WARNING: You booted a Persistent entry but \
+no persistence volume was found; the system is running amnesic and all changes \
+will be lost on reboot. Click on the icon for more information."""
 
 
 # pylint: disable=too-few-public-methods
@@ -858,6 +894,12 @@ class TrayUi(QObject):
                 self.tray_icon.setIcon(
                     QIcon(icon_base_path + semi_persistent_danger_mode_icon)
                 )
+            case "persistence-amnesic":
+                self.active_text = persistence_amnesic_text_gui
+                self.tray_icon.setToolTip(persistence_amnesic_tooltip)
+                self.tray_icon.setIcon(
+                    QIcon(icon_base_path + semi_persistent_danger_mode_icon)
+                )
             case "installing-distribution":
                 self.active_text = installing_distribution_text_gui
                 self.tray_icon.setToolTip(installing_distribution_tooltip)
@@ -1076,11 +1118,28 @@ class MountChecker(QObject):
             live_check_process.stdout.strip().splitlines()
         )
 
+        ## Opt-in persistent live overlay: a 'Persistent' GRUB entry was booted
+        ## but no persistence volume engaged -> silently amnesic. Flagged as a
+        ## dedicated state so the tray warns instead of showing plain 'iso-live'.
+        persistence_requested: bool = False
+        persistence_active: bool = False
+        for line in live_check_output:
+            if line.startswith("live_status_persistence_requested="):
+                persistence_requested = (
+                    line.split("=", maxsplit=1)[1].strip("'") == "true"
+                )
+            elif line.startswith("live_status_persistence_active="):
+                persistence_active = (
+                    line.split("=", maxsplit=1)[1].strip("'") == "true"
+                )
+
         for line in live_check_output:
             if line.startswith(
                 "live_status_detected_live_mode_environment_machine="
             ):
                 live_mode_str: str = line.split("=", maxsplit=1)[1].strip("'")
+                if persistence_requested and not persistence_active:
+                    live_mode_str = "persistence-amnesic"
                 writable_fs_list_data: Tuple[
                     int, list[str] | str, list[str] | str
                 ] = MountChecker.get_writable_fs_lists()
@@ -1298,6 +1357,8 @@ def main_cli() -> NoReturn:
                     live_check_str_two,
                 )
             )
+        case "persistence-amnesic":
+            print(persistence_amnesic_text_cli)
         case "installing-distribution":
             print(installing_distribution_text_cli)
         case "persistent":
