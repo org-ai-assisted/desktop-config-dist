@@ -289,6 +289,33 @@ amnesic)
 
 {kicksecure_wiki_homepage}/wiki/Live_Mode"""
 
+persistence_active_text_gui: str = f"""{text_header_gui}<br/>
+<br/>
+<b>Live Mode Active:</b> <b>Yes</b> (persistent live overlay)<br/>
+<b>Persistent Mode Active:</b> <b>Yes</b> (overlay on your persistence disk)
+<ul>
+  <li>Changes to the whole system are written to your persistence disk and \
+survive a reboot.</li>
+  <li>/boot (bootloader, kernel, initramfs) is NOT persistent: kernel, initramfs \
+and GRUB upgrades will not take effect in live mode.</li>
+  <li>For more information, see the following link:</li>
+</ul>
+<a href="{kicksecure_wiki_homepage}/wiki/Live_Mode">\
+{kicksecure_wiki_homepage}/wiki/Live_Mode</a>"""
+
+persistence_active_text_cli: str = f"""{text_header_cli}
+
+{colors.bold}Live Mode Active: Yes{colors.reset} (persistent live overlay)
+{colors.bold}Persistent Mode Active: Yes{colors.reset} (overlay on your persistence disk)
+
+* Changes to the whole system are written to your persistence disk and survive a
+  reboot.
+* /boot (bootloader, kernel, initramfs) is NOT persistent: kernel, initramfs and
+  GRUB upgrades will not take effect in live mode.
+* For more information, see the following link:
+
+{kicksecure_wiki_homepage}/wiki/Live_Mode"""
+
 semi_persistent_safe_mode_text_gui: str = f"""{text_header_gui}<br/>
 <br/>
 <b>Live Mode Active:</b> <b>Yes</b> (grub-live semi-persistent)<br/>
@@ -548,6 +575,10 @@ determined. Click on the icon for more information."""
 persistence_amnesic_tooltip: str = """WARNING: You booted a Persistent entry but \
 no persistence volume was found; the system is running amnesic and all changes \
 will be lost on reboot. Click on the icon for more information."""
+
+persistence_active_tooltip: str = """Persistent live overlay ACTIVE: changes to \
+the system are saved to your persistence disk and survive reboot. Click on the \
+icon for more information."""
 
 
 # pylint: disable=too-few-public-methods
@@ -900,6 +931,12 @@ class TrayUi(QObject):
                 self.tray_icon.setIcon(
                     QIcon(icon_base_path + semi_persistent_danger_mode_icon)
                 )
+            case "persistence-active":
+                self.active_text = persistence_active_text_gui
+                self.tray_icon.setToolTip(persistence_active_tooltip)
+                self.tray_icon.setIcon(
+                    QIcon(icon_base_path + persistent_mode_icon)
+                )
             case "installing-distribution":
                 self.active_text = installing_distribution_text_gui
                 self.tray_icon.setToolTip(installing_distribution_tooltip)
@@ -950,12 +987,18 @@ class TrayUi(QObject):
                 self.tray_icon.setIcon(QIcon(icon_base_path + error_icon))
 
         if self.prev_live_state != "loading":
-            if live_mode_str not in ("iso-live", "grub-live", "persistent"):
+            if live_mode_str not in (
+                "iso-live",
+                "grub-live",
+                "persistent",
+                "persistence-active",
+            ):
                 self.show_notification(live_mode_str, False)
             elif self.prev_live_state not in (
                 "iso-live",
                 "grub-live",
                 "persistent",
+                "persistence-active",
             ):
                 self.show_notification(live_mode_str, False)
         elif live_mode_str != "persistent":
@@ -1149,6 +1192,16 @@ class MountChecker(QObject):
                     and live_mode_str in ("iso-live", "grub-live", "grub-live-read-only")
                 ):
                     live_mode_str = "persistence-amnesic"
+                elif (
+                    persistence_requested
+                    and persistence_active
+                    and live_mode_str in ("iso-live", "grub-live")
+                ):
+                    # Engaged persistent overlay. The root overlay is not seen as a
+                    # physical writable mount, so the base state reads as a plain
+                    # live mode; relabel it positively so the tray does not imply
+                    # the session is amnesic.
+                    live_mode_str = "persistence-active"
                 writable_fs_list_data: Tuple[
                     int, list[str] | str, list[str] | str
                 ] = MountChecker.get_writable_fs_lists()
@@ -1368,6 +1421,8 @@ def main_cli() -> NoReturn:
             )
         case "persistence-amnesic":
             print(persistence_amnesic_text_cli)
+        case "persistence-active":
+            print(persistence_active_text_cli)
         case "installing-distribution":
             print(installing_distribution_text_cli)
         case "persistent":
