@@ -268,8 +268,8 @@ found.</li>
   <li><b>All changes will be lost on reboot.</b></li>
   <li>Provision a second disk in a live session with \
 <code>sudo persistence-setup</code>, then reboot into the <b>Persistent</b> \
-submenu. If the disk is LUKS-encrypted, enter its passphrase when prompted in \
-early boot.</li>
+submenu. For a LUKS-encrypted disk, append the <code>rd.luks.uuid=</code> line \
+that persistence-setup printed to the entry (GRUB 'e') so it unlocks.</li>
   <li>For more information, see the following link:</li>
 </ul>
 <a href="{kicksecure_wiki_homepage}/wiki/Live_Mode">\
@@ -1138,7 +1138,16 @@ class MountChecker(QObject):
                 "live_status_detected_live_mode_environment_machine="
             ):
                 live_mode_str: str = line.split("=", maxsplit=1)[1].strip("'")
-                if persistence_requested and not persistence_active:
+                # Only override a GENUINELY amnesic live state. Semi-persistent
+                # states still persist some writable mounts, and the writable-
+                # root 'false' (persistent) state persists everything, so
+                # reporting either as fully amnesic would be wrong and would hide
+                # those mounts. Those cases keep their own state + messaging.
+                if (
+                    persistence_requested
+                    and not persistence_active
+                    and live_mode_str in ("iso-live", "grub-live", "grub-live-read-only")
+                ):
                     live_mode_str = "persistence-amnesic"
                 writable_fs_list_data: Tuple[
                     int, list[str] | str, list[str] | str
