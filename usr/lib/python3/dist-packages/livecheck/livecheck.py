@@ -1,4 +1,4 @@
-#!/usr/bin/python3 -su
+#!/usr/bin/python3 -Bsu
 
 # Copyright (C) 2025 - 2025 ENCRYPTED SUPPORT LLC <adrelanos@whonix.org>
 # See the file COPYING for copying conditions.
@@ -54,6 +54,8 @@ from PyQt6.QtDBus import (
 )
 
 from term_colors.term_colors import TermColors
+
+from guimessages.check_display import exit_if_no_gui
 
 colors = TermColors()
 
@@ -253,6 +255,65 @@ read_only_mode_text_cli: str = f"""{text_header_cli}
 * No changes will be made to disk.
 * All storage media available to the OS is set to read-only by hardware
   or drivers.
+* For more information, see the following link:
+
+{kicksecure_wiki_homepage}/wiki/Live_Mode"""
+
+persistence_amnesic_text_gui: str = f"""{text_header_gui}<br/>
+<br/>
+<b>Live Mode Active:</b> <b>Yes</b> (persistent boot, but \
+<font color="red">running amnesic</font>)<br/>
+<b>Persistent Mode Active:</b> <font color="red">No</font>
+<ul>
+  <li>You booted a <b>Persistent</b> entry, but no persistence volume was \
+found.</li>
+  <li><b>All changes will be lost on reboot.</b></li>
+  <li>Provision a second disk in a live session with \
+<code>sudo persistence-setup</code>, then reboot into the <b>Persistent</b> \
+submenu. For a LUKS-encrypted disk, enter the passphrase when prompted in early \
+boot.</li>
+  <li>For more information, see the following link:</li>
+</ul>
+<a href="{kicksecure_wiki_homepage}/wiki/Live_Mode">\
+{kicksecure_wiki_homepage}/wiki/Live_Mode</a>"""
+
+persistence_amnesic_text_cli: str = f"""{text_header_cli}
+
+{colors.bold}Live Mode Active: Yes{colors.reset} (persistent boot, running \
+amnesic)
+{colors.bold}Persistent Mode Active: No{colors.reset}
+
+* You booted a 'Persistent' entry, but no persistence volume was found.
+* All changes will be lost on reboot.
+* Provision a second disk in a live session with 'sudo persistence-setup',
+  then reboot into the 'Persistent' submenu.
+* For more information, see the following link:
+
+{kicksecure_wiki_homepage}/wiki/Live_Mode"""
+
+persistence_active_text_gui: str = f"""{text_header_gui}<br/>
+<br/>
+<b>Live Mode Active:</b> <b>Yes</b> (persistent live overlay)<br/>
+<b>Persistent Mode Active:</b> <b>Yes</b> (overlay on your persistence disk)
+<ul>
+  <li>Changes to the whole system are written to your persistence disk and \
+survive a reboot.</li>
+  <li>/boot (bootloader, kernel, initramfs) is NOT persistent: kernel, initramfs \
+and GRUB upgrades will not take effect in live mode.</li>
+  <li>For more information, see the following link:</li>
+</ul>
+<a href="{kicksecure_wiki_homepage}/wiki/Live_Mode">\
+{kicksecure_wiki_homepage}/wiki/Live_Mode</a>"""
+
+persistence_active_text_cli: str = f"""{text_header_cli}
+
+{colors.bold}Live Mode Active: Yes{colors.reset} (persistent live overlay)
+{colors.bold}Persistent Mode Active: Yes{colors.reset} (overlay on your persistence disk)
+
+* Changes to the whole system are written to your persistence disk and survive a
+  reboot.
+* /boot (bootloader, kernel, initramfs) is NOT persistent: kernel, initramfs and
+  GRUB upgrades will not take effect in live mode.
 * For more information, see the following link:
 
 {kicksecure_wiki_homepage}/wiki/Live_Mode"""
@@ -512,6 +573,14 @@ information."""
 
 error_live_state_tooltip: str = """ERROR: The system's live state cannot be \
 determined. Click on the icon for more information."""
+
+persistence_amnesic_tooltip: str = """WARNING: You booted a Persistent entry but \
+no persistence volume was found; the system is running amnesic and all changes \
+will be lost on reboot. Click on the icon for more information."""
+
+persistence_active_tooltip: str = """Persistent live overlay ACTIVE: changes to \
+the system are saved to your persistence disk and survive reboot. Click on the \
+icon for more information."""
 
 
 # pylint: disable=too-few-public-methods
@@ -858,6 +927,18 @@ class TrayUi(QObject):
                 self.tray_icon.setIcon(
                     QIcon(icon_base_path + semi_persistent_danger_mode_icon)
                 )
+            case "persistence-amnesic":
+                self.active_text = persistence_amnesic_text_gui
+                self.tray_icon.setToolTip(persistence_amnesic_tooltip)
+                self.tray_icon.setIcon(
+                    QIcon(icon_base_path + semi_persistent_danger_mode_icon)
+                )
+            case "persistence-active":
+                self.active_text = persistence_active_text_gui
+                self.tray_icon.setToolTip(persistence_active_tooltip)
+                self.tray_icon.setIcon(
+                    QIcon(icon_base_path + persistent_mode_icon)
+                )
             case "installing-distribution":
                 self.active_text = installing_distribution_text_gui
                 self.tray_icon.setToolTip(installing_distribution_tooltip)
@@ -908,12 +989,18 @@ class TrayUi(QObject):
                 self.tray_icon.setIcon(QIcon(icon_base_path + error_icon))
 
         if self.prev_live_state != "loading":
-            if live_mode_str not in ("iso-live", "grub-live", "persistent"):
+            if live_mode_str not in (
+                "iso-live",
+                "grub-live",
+                "persistent",
+                "persistence-active",
+            ):
                 self.show_notification(live_mode_str, False)
             elif self.prev_live_state not in (
                 "iso-live",
                 "grub-live",
                 "persistent",
+                "persistence-active",
             ):
                 self.show_notification(live_mode_str, False)
         elif live_mode_str != "persistent":
@@ -1076,11 +1163,47 @@ class MountChecker(QObject):
             live_check_process.stdout.strip().splitlines()
         )
 
+        ## Opt-in persistent live overlay: a 'Persistent' GRUB entry was booted
+        ## but no persistence volume engaged -> silently amnesic. Flagged as a
+        ## dedicated state so the tray warns instead of showing plain 'iso-live'.
+        persistence_requested: bool = False
+        persistence_active: bool = False
+        for line in live_check_output:
+            if line.startswith("live_status_persistence_requested="):
+                persistence_requested = (
+                    line.split("=", maxsplit=1)[1].strip("'") == "true"
+                )
+            elif line.startswith("live_status_persistence_active="):
+                persistence_active = (
+                    line.split("=", maxsplit=1)[1].strip("'") == "true"
+                )
+
         for line in live_check_output:
             if line.startswith(
                 "live_status_detected_live_mode_environment_machine="
             ):
                 live_mode_str: str = line.split("=", maxsplit=1)[1].strip("'")
+                # Only override a GENUINELY amnesic live state. Semi-persistent
+                # states still persist some writable mounts, and the writable-
+                # root 'false' (persistent) state persists everything, so
+                # reporting either as fully amnesic would be wrong and would hide
+                # those mounts. Those cases keep their own state + messaging.
+                if (
+                    persistence_requested
+                    and not persistence_active
+                    and live_mode_str in ("iso-live", "grub-live", "grub-live-read-only")
+                ):
+                    live_mode_str = "persistence-amnesic"
+                elif (
+                    persistence_requested
+                    and persistence_active
+                    and live_mode_str in ("iso-live", "grub-live")
+                ):
+                    # Engaged persistent overlay. The root overlay is not seen as a
+                    # physical writable mount, so the base state reads as a plain
+                    # live mode; relabel it positively so the tray does not imply
+                    # the session is amnesic.
+                    live_mode_str = "persistence-active"
                 writable_fs_list_data: Tuple[
                     int, list[str] | str, list[str] | str
                 ] = MountChecker.get_writable_fs_lists()
@@ -1178,6 +1301,10 @@ def main_gui(show_window: bool) -> NoReturn:
     Launches the Livecheck GUI.
     """
 
+    # Constructing a QApplication on a machine with no display SIGABRTs
+    # (exit 134, uncatchable C++ qFatal). Guard exits cleanly (0) instead.
+    # Must run before the QApplication construction below.
+    exit_if_no_gui()
     app: QApplication = QApplication(sys.argv)
     app.setDesktopFileName("livecheck")
     app.setQuitOnLastWindowClosed(False)
@@ -1298,6 +1425,10 @@ def main_cli() -> NoReturn:
                     live_check_str_two,
                 )
             )
+        case "persistence-amnesic":
+            print(persistence_amnesic_text_cli)
+        case "persistence-active":
+            print(persistence_active_text_cli)
         case "installing-distribution":
             print(installing_distribution_text_cli)
         case "persistent":
