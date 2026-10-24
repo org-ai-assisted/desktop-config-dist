@@ -32,6 +32,8 @@ from PyQt5.QtWidgets import (
     QGroupBox,
 )
 
+from guimessages.check_display import exit_if_no_gui
+
 
 # pylint: disable=too-few-public-methods
 class ErrorWindow(QDialog):
@@ -222,6 +224,10 @@ def main() -> NoReturn:
     Main function.
     """
 
+    # Constructing a QApplication on a machine with no display SIGABRTs
+    # (exit 134, uncatchable C++ qFatal). Guard exits cleanly (0) instead.
+    # Must run before the QApplication construction below.
+    exit_if_no_gui()
     app = QApplication(sys.argv)
 
     signal.signal(signal.SIGINT, signal_handler)

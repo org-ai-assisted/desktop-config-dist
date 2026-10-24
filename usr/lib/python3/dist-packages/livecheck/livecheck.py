@@ -55,6 +55,8 @@ from PyQt6.QtDBus import (
 
 from term_colors.term_colors import TermColors
 
+from guimessages.check_display import exit_if_no_gui
+
 colors = TermColors()
 
 installer_monitor_dir: Path = Path("/var/lib/desktop-config-dist/livecheck")
@@ -1299,6 +1301,10 @@ def main_gui(show_window: bool) -> NoReturn:
     Launches the Livecheck GUI.
     """
 
+    # Constructing a QApplication on a machine with no display SIGABRTs
+    # (exit 134, uncatchable C++ qFatal). Guard exits cleanly (0) instead.
+    # Must run before the QApplication construction below.
+    exit_if_no_gui()
     app: QApplication = QApplication(sys.argv)
     app.setDesktopFileName("livecheck")
     app.setQuitOnLastWindowClosed(False)
