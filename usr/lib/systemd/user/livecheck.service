@@ -22,3 +22,9 @@ SystemCallArchitectures=native
 LockPersonality=true
 SystemCallFilter=~memfd_create
 NoExecPaths=/tmp /var/tmp /dev/shm
+
+## Defense-in-depth (separate axis from W^X): NoNewPrivileges blocks this
+## daemon and its children from gaining privileges (setuid/setgid, file
+## capabilities, AppArmor non-subset Px). No child gains privilege
+## (notify-send/lsblk/helper scripts only).
+NoNewPrivileges=yes
