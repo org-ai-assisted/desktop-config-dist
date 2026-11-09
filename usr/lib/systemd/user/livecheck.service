@@ -10,3 +10,15 @@ Type=dbus
 BusName=com.kicksecure.livecheck
 ExecStart=/usr/bin/livecheck --gui
 Restart=no
+
+## W^X hardening (anonymous + file-backed). MemoryDenyWriteExecute denies anon
+## W+X and mprotect/shmat gaining PROT_EXEC; SystemCallArchitectures=native closes
+## the secondary-ABI (i386) bypass; LockPersonality blocks READ_IMPLIES_EXEC;
+## SystemCallFilter=~memfd_create kills the memfd bypass; NoExecPaths marks the
+## shared writable dirs non-executable (file-backed exec). livecheck is CPython +
+## PyQt6 (QtWidgets/QtGui/QtDBus; no QtWebEngine/QML), no JIT.
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+LockPersonality=true
+SystemCallFilter=~memfd_create
+NoExecPaths=/tmp /var/tmp /dev/shm
