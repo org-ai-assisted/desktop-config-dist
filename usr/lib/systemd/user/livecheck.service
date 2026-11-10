@@ -14,13 +14,19 @@ Restart=no
 ## W^X hardening (anonymous + file-backed). MemoryDenyWriteExecute denies anon
 ## W+X and mprotect/shmat gaining PROT_EXEC; SystemCallArchitectures=native closes
 ## the secondary-ABI (i386) bypass; LockPersonality blocks READ_IMPLIES_EXEC;
-## SystemCallFilter=~memfd_create kills the memfd bypass; NoExecPaths marks the
+## SystemCallFilter=~memfd_create denies the memfd bypass; NoExecPaths marks the
 ## shared writable dirs non-executable (file-backed exec). livecheck is CPython +
 ## PyQt6 (QtWidgets/QtGui/QtDBus; no QtWebEngine/QML), no JIT.
+##
+## EPERM (not default SIGSYS): this daemon's own Qt/Wayland code calls
+## memfd_create for shm draw buffers; EPERM keeps the memfd W^X bypass closed
+## (denied) while allowing the shm_open fallback to render; /dev/shm noexec keeps
+## that fallback non-exec.
 MemoryDenyWriteExecute=true
 SystemCallArchitectures=native
 LockPersonality=true
 SystemCallFilter=~memfd_create
+SystemCallErrorNumber=EPERM
 NoExecPaths=/tmp /var/tmp /dev/shm
 
 ## Defense-in-depth (separate axis from W^X): NoNewPrivileges blocks this
