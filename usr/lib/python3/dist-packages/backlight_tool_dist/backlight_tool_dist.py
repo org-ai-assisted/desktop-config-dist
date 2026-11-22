@@ -224,9 +224,6 @@ def main() -> NoReturn:
     Main function.
     """
 
-    # Constructing a QApplication on a machine with no display SIGABRTs
-    # (exit 134, uncatchable C++ qFatal). Guard exits cleanly (0) instead.
-    # Must run before the QApplication construction below.
     exit_if_no_gui()
     app = QApplication(sys.argv)
 
