@@ -13,8 +13,12 @@ set -o errtrace
 shopt -s inherit_errexit
 shopt -s shift_verbose
 
-orig_lc_all='UNSET'
+## Track whether LC_ALL was set separately from its value, so a literal
+## value such as LC_ALL=UNSET is preserved rather than mistaken for "unset".
+orig_lc_all=''
+orig_lc_all_set=0
 if [ -v LC_ALL ]; then
+  orig_lc_all_set=1
   orig_lc_all="${LC_ALL}"
 fi
 
@@ -143,7 +147,9 @@ if has pactl; then
   ## making a flag file but must not prevent us from setting the speaker
   ## volume. Failing to set the volume could result in hardware damage.
   if [ -z "${do_once_dir}" ] || ! [ -f "${do_once_dir}/set_safe_speaker_volume" ]; then
-    [ -n "${do_once_dir}" ] && touch -- "${do_once_dir}/set_safe_speaker_volume" || true
+    if [ -n "${do_once_dir}" ]; then
+      touch -- "${do_once_dir}/set_safe_speaker_volume" || true
+    fi
     if [ "$(systemd-detect-virt 2>/dev/null || true)" = 'none' ]; then
       try_wait_for_audio_ready
       timeout --kill-after="1" "1" pactl set-sink-volume @DEFAULT_SINK@ 50% || true
@@ -151,7 +157,7 @@ if has pactl; then
   fi
 fi
 
-if [ "${orig_lc_all}" = 'UNSET' ]; then
+if [ "${orig_lc_all_set}" -eq 0 ]; then
   unset LC_ALL
 else
   LC_ALL="${orig_lc_all}"
