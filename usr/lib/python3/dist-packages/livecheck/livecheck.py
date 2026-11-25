@@ -1,4 +1,4 @@
-#!/usr/bin/python3 -su
+#!/usr/bin/python3 -Bsu
 
 # Copyright (C) 2025 - 2025 ENCRYPTED SUPPORT LLC <adrelanos@whonix.org>
 # See the file COPYING for copying conditions.
@@ -54,6 +54,8 @@ from PyQt6.QtDBus import (
 )
 
 from term_colors.term_colors import TermColors
+
+from guimessages.check_display import exit_if_no_gui
 
 colors = TermColors()
 
@@ -1138,8 +1140,6 @@ class MountChecker(QObject):
         only for use in Livecheck's GUI mode.
         """
 
-        # pylint: disable=consider-using-with
-        mount_file: TextIO = open("/proc/self/mounts", "r", encoding="utf-8")
         mount_poll: select.poll = select.poll()
         ## According to `man proc_pid_mounts`:
         ##
@@ -1148,19 +1148,20 @@ class MountChecker(QObject):
         ## filesystem mount or unmount) causes select(2) to mark the file
         ## descriptor as having an exceptional condition, and poll(s) and
         ## epoll_wait(2) mark the file as having a priority event (POLLPRI).
-        mount_poll.register(mount_file, select.POLLPRI)
-        while True:
-            mount_file.seek(0)
-            mount_file.read()
-            live_state_info: Tuple[str, str, str] = self.get_live_state_info(
-                in_cli_mode=False
-            )
-            self.mountStateChanged.emit(
-                live_state_info[0],
-                live_state_info[1],
-                live_state_info[2],
-            )
-            mount_poll.poll()
+        with open("/proc/self/mounts", "r", encoding="utf-8") as mount_file:
+            mount_poll.register(mount_file, select.POLLPRI)
+            while True:
+                mount_file.seek(0)
+                mount_file.read()
+                live_state_info: Tuple[str, str, str] = (
+                    self.get_live_state_info(in_cli_mode=False)
+                )
+                self.mountStateChanged.emit(
+                    live_state_info[0],
+                    live_state_info[1],
+                    live_state_info[2],
+                )
+                mount_poll.poll()
 
 
 # pylint: disable=unused-argument
@@ -1178,6 +1179,7 @@ def main_gui(show_window: bool) -> NoReturn:
     Launches the Livecheck GUI.
     """
 
+    exit_if_no_gui()
     app: QApplication = QApplication(sys.argv)
     app.setDesktopFileName("livecheck")
     app.setQuitOnLastWindowClosed(False)

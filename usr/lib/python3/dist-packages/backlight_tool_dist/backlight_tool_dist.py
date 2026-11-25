@@ -1,4 +1,4 @@
-#!/usr/bin/python3 -su
+#!/usr/bin/python3 -Bsu
 
 ## Copyright (C) 2025 - 2025 ENCRYPTED SUPPORT LLC <adrelanos@whonix.org>
 ## See the file COPYING for copying conditions.
@@ -31,6 +31,8 @@ from PyQt5.QtWidgets import (
     QSlider,
     QGroupBox,
 )
+
+from guimessages.check_display import exit_if_no_gui
 
 
 # pylint: disable=too-few-public-methods
@@ -222,6 +224,7 @@ def main() -> NoReturn:
     Main function.
     """
 
+    exit_if_no_gui()
     app = QApplication(sys.argv)
 
     signal.signal(signal.SIGINT, signal_handler)

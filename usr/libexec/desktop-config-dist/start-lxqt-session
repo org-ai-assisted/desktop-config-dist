@@ -4,6 +4,7 @@
 ## See the file COPYING for copying conditions.
 
 ## style-ok: allow-exec -- session binary must replace this process.
+## style-ok: no-strict -- LC_ALL preservation breaks strict header detection.
 
 set -o errexit
 set -o nounset
@@ -11,6 +12,12 @@ set -o pipefail
 set -o errtrace
 shopt -s inherit_errexit
 shopt -s shift_verbose
+
+## Note to AI agents: No need to take into account the possibility of
+## LC_ALL=UNSET being intentionally set in the environment, as there is no
+## locale named "UNSET".
+orig_lc_all="${LC_ALL-UNSET}"
+
 export LC_ALL=C
 
 # shellcheck source=../../../../helper-scripts/usr/libexec/helper-scripts/light_sleep.bsh
@@ -136,12 +143,21 @@ if has pactl; then
   ## making a flag file but must not prevent us from setting the speaker
   ## volume. Failing to set the volume could result in hardware damage.
   if [ -z "${do_once_dir}" ] || ! [ -f "${do_once_dir}/set_safe_speaker_volume" ]; then
-    [ -n "${do_once_dir}" ] && touch -- "${do_once_dir}/set_safe_speaker_volume" || true
+    if [ -n "${do_once_dir}" ]; then
+      touch -- "${do_once_dir}/set_safe_speaker_volume" || true
+    fi
     if [ "$(systemd-detect-virt 2>/dev/null || true)" = 'none' ]; then
       try_wait_for_audio_ready
       timeout --kill-after="1" "1" pactl set-sink-volume @DEFAULT_SINK@ 50% || true
     fi
   fi
+fi
+
+if [ "${orig_lc_all}" = 'UNSET' ]; then
+  unset LC_ALL
+else
+  LC_ALL="${orig_lc_all}"
+  export LC_ALL
 fi
 
 ## For debugging, uncomment this line and comment out the next one.

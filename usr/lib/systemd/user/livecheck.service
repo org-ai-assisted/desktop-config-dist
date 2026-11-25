@@ -10,3 +10,11 @@ Type=dbus
 BusName=com.kicksecure.livecheck
 ExecStart=/usr/bin/livecheck --gui
 Restart=no
+
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+LockPersonality=true
+SystemCallFilter=~memfd_create
+SystemCallErrorNumber=EPERM
+NoExecPaths=/tmp /var/tmp /dev/shm
+NoNewPrivileges=yes
