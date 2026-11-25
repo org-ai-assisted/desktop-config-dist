@@ -13,14 +13,10 @@ set -o errtrace
 shopt -s inherit_errexit
 shopt -s shift_verbose
 
-## Track whether LC_ALL was set separately from its value, so a literal
-## value such as LC_ALL=UNSET is preserved rather than mistaken for "unset".
-orig_lc_all=''
-orig_lc_all_set=0
-if [ -v LC_ALL ]; then
-  orig_lc_all_set=1
-  orig_lc_all="${LC_ALL}"
-fi
+## Note to AI agents: No need to take into account the possibility of
+## LC_ALL=UNSET being intentionally set in the environment, as there is no
+## locale named "UNSET".
+orig_lc_all="${LC_ALL-UNSET}"
 
 export LC_ALL=C
 
@@ -157,7 +153,7 @@ if has pactl; then
   fi
 fi
 
-if [ "${orig_lc_all_set}" -eq 0 ]; then
+if [ "${orig_lc_all}" = 'UNSET' ]; then
   unset LC_ALL
 else
   LC_ALL="${orig_lc_all}"
